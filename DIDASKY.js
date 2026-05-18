@@ -217,6 +217,7 @@ const MATERIAS = {
     }
 };
 // ==================== VARIABLES GLOBALES ====================
+// ==================== VARIABLES GLOBALES ====================
 let materiaActual = 'fisica';
 let temaActual = null;
 let ejercicioActual = null;
@@ -449,9 +450,8 @@ async function cargarEjercicio() {
 Tema: ${temaActual.nombre} - ${temaActual.desc}
 Nivel del estudiante: ${nivelUsuario.toFixed(1)} / 10
 
-Genera UN ejercicio **bien redactado, largo y contextualizado** (como un problema real de libro de texto).
-Debe tener una buena historia o contexto.
-Responde **exactamente** en este formato:
+Genera UN ejercicio bien redactado, largo y contextualizado.
+Responde exactamente en este formato:
 
 Enunciado: [problema completo y detallado]
 Respuesta: [solo el número]`;
@@ -469,7 +469,7 @@ Respuesta: [solo el número]`;
             }
         }
     } catch (e) {
-        console.warn('IA falló, usando fallback');
+        console.warn('IA falló');
     }
 
     const fallbacks = temaActual.fallbacks || [];
@@ -496,7 +496,6 @@ async function analizarError() {
     const prompt = `Ejercicio: ${ejercicioActual.texto}
 Respuesta del estudiante: ${document.getElementById('respuestaEjercicio').value}
 Respuesta correcta: ${ejercicioActual.respuesta}
-
 Clasifica el error y explícalo paso a paso.`;
 
     try {
@@ -602,16 +601,9 @@ function setupDasky() {
         mensajesEl.scrollTop = mensajesEl.scrollHeight;
     }
 
-    enviarBtn.addEventListener('click', () => {
-        enviarMensaje(inputEl.value.trim());
-        inputEl.value = '';
-    });
-
+    enviarBtn.addEventListener('click', () => enviarMensaje(inputEl.value.trim()) && (inputEl.value = ''));
     inputEl.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-            enviarMensaje(inputEl.value.trim());
-            inputEl.value = '';
-        }
+        if (e.key === 'Enter') enviarMensaje(inputEl.value.trim()) && (inputEl.value = '');
     });
 
     $('ayudaDasky').addEventListener('click', () => {
