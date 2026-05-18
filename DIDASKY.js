@@ -371,35 +371,84 @@ function cerrarPopup() {
     $('nodoPopup').classList.add('oculta');
     $('popupOverlay').classList.add('oculta');
 }
+let diagTimer = null;
 
+function finalizarDiagnosticoTema(exito) {
+    if (diagTimer) clearInterval(diagTimer);
+    
+    const input = $('diagTemaInput');
+    const retro = $('diagTemaRetro');
+    if (input) input.disabled = true;
+    if ($('diagTemaComprobar')) $('diagTemaComprobar').disabled = true;
+
+    if (exito) {
+        nivelUsuario = 6.5;
+        retro.innerHTML = `<div class="retro-correcto"><strong>¡Excelente!</strong><br>Tienes buen nivel en este tema.</div>`;
+    } else {
+        const userVal = parseFloat(input.value.replace(',', '.'));
+        if (!isNaN(userVal)) {
+            const diff = Math.abs(userVal - ejercicioActual.respuesta);
+            if (diff < ejercicioActual.respuesta * 0.4) {
+                nivelUsuario = 4.0;
+                retro.innerHTML = `<div class="retro-warning"><strong>Casi...</strong><br>Empezamos en nivel intermedio.</div>`;
+            } else {
+                nivelUsuario = 2.0;
+                retro.innerHTML = `<div class="retro-incorrecto"><strong>Vamos desde lo básico</strong><br>Reforzaremos fundamentos.</div>`;
+            }
+        } else {
+            nivelUsuario = 2.0;
+            retro.innerHTML = `<div class="retro-incorrecto"><strong>Tiempo agotado</strong><br>Empezamos desde nivel básico.</div>`;
+        }
+    }
+
+    actualizarScoreUI();
+
+    setTimeout(() => {
+        ejercicioActual.esDiagnostico = false;
+        mostrarPantalla('ejercicioScreen');
+        $('topbarTemaTitulo').textContent = `${temaActual.emoji} ${temaActual.nombre}`;
+        cargarEjercicio();
+    }, 2200);
+}
 function iniciarDiagnosticoTema() {
     if (!temaActual) return;
     cerrarPopup();
-    mostrarPantalla('ejercicioScreen');
-    $('topbarTemaTitulo').textContent = `${temaActual.emoji} ${temaActual.nombre}`;
+    
+    mostrarPantalla('diagnosticoTemaScreen');
+    
+    $('diagTemaNombre').textContent = temaActual.nombre;
+    $('diagTemaDesc').textContent = temaActual.desc;
 
-    // Seleccionamos un buen diagnóstico
     const diagnosticos = temaActual.diagnosticos || temaActual.fallbacks || [];
     const seleccionado = diagnosticos[Math.floor(Math.random() * diagnosticos.length)];
 
     ejercicioActual = { 
         texto: seleccionado.texto, 
         respuesta: seleccionado.respuesta,
-        esDiagnostico: true   // ← Marca que es diagnóstico
+        esDiagnostico: true 
     };
 
-    $('enunciadoEjercicio').innerHTML = `
-        <p><strong>🔍 DIAGNÓSTICO INICIAL</strong><br>
-        Resuelve este problema para ajustar tu nivel en este tema:</p>
-        <p>${ejercicioActual.texto}</p>`;
+    $('diagTemaEnunciado').innerHTML = `<p>${ejercicioActual.texto}</p>`;
 
-    const input = $('respuestaEjercicio');
+    const input = $('diagTemaInput');
     input.value = '';
     input.disabled = false;
-    $('comprobarEjercicio').disabled = false;
-    $('retroalimentacion').innerHTML = '';
+    $('diagTemaComprobar').disabled = false;
+    $('diagTemaRetro').innerHTML = '';
 
-    initPizarra();
+    // Temporizador 60 segundos
+    let tiempo = 60;
+    const timerEl = $('diagTemaTimer');
+    if (diagTimer) clearInterval(diagTimer);
+    
+    diagTimer = setInterval(() => {
+        tiempo--;
+        if (timerEl) timerEl.textContent = tiempo;
+        if (tiempo <= 0) {
+            clearInterval(diagTimer);
+            finalizarDiagnosticoTema(false);
+        }
+    }, 1000);
 }
 async function cargarEjercicio() {
     if (!temaActual) return;
@@ -631,8 +680,10 @@ function setupDasky() {
 document.addEventListener('DOMContentLoaded', () => {
     const savedNivel = parseFloat(localStorage.getItem('didasky_nivel'));
     if (!isNaN(savedNivel)) nivelUsuario = savedNivel;
+    
     actualizarScoreUI();
 
+    // Selección de materia
     document.querySelectorAll('.materia-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.materia-btn').forEach(b => b.classList.remove('activa-materia'));
@@ -641,6 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Botón Zarpar
     $('btnEmpezar').addEventListener('click', () => {
         mostrarPantalla('mapaScreen');
         actualizarTopbarMateria();
@@ -650,9 +702,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function actualizarTopbarMateria() {
         const materia = MATERIAS[materiaActual];
-        if ($('topbarMateriaBadge')) $('topbarMateriaBadge').textContent = `${materia.icono} ${materia.nombre}`;
+        if ($('topbarMateriaBadge')) {
+            $('topbarMateriaBadge').textContent = `${materia.icono} ${materia.nombre}`;
+        }
     }
 
+    // Eventos generales
     $('popupEntrar').addEventListener('click', iniciarDiagnosticoTema);
     $('popupCerrar').addEventListener('click', cerrarPopup);
     $('popupOverlay').addEventListener('click', cerrarPopup);
@@ -668,11 +723,42 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnCambiarMateria').addEventListener('click', () => {
         mostrarPantalla('inicioScreen');
         $('daskyToggle').classList.add('oculta');
+        $('daskyChatBox').classList.add('oculta');
     });
 
     $('respuestaEjercicio').addEventListener('keydown', e => {
         if (e.key === 'Enter') comprobarRespuesta();
     });
+
+    // ==================== DIAGNÓSTICO POR TEMA ====================
+    const diagTemaComprobar = $('diagTemaComprobar');
+    if (diagTemaComprobar) {
+        diagTemaComprobar.addEventListener('click', () => {
+            const input = $('diagTemaInput');
+            const userVal = parseFloat(input.value.replace(',', '.'));
+            
+            if (isNaN(userVal)) {
+                $('diagTemaRetro').innerHTML = `<div class="retro-warning">⚠️ Ingresa un número válido.</div>`;
+                return;
+            }
+            
+            const correcta = ejercicioActual.respuesta;
+            const esCorrecto = Math.abs(userVal - correcta) <= Math.max(correcta * 0.15, 1);
+            
+            finalizarDiagnosticoTema(esCorrecto);
+        });
+    }
+
+    // Enter en el input del diagnóstico
+    const diagInputTema = $('diagTemaInput');
+    if (diagInputTema) {
+        diagInputTema.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const btn = $('diagTemaComprobar');
+                if (btn) btn.click();
+            }
+        });
+    }
 
     setupDasky();
 });
