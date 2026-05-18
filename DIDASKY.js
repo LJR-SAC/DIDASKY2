@@ -263,10 +263,6 @@ function initPizarra() {
         link.href = canvas.toDataURL('image/png');
         link.click();
     });
-    $('togglePizarra').addEventListener('click', () => {
-        const cont = $('pizarraContainer');
-        cont.style.display = cont.style.display === 'none' ? 'block' : 'none';
-    });
 }
 
 function startDrawing(e) {
@@ -354,13 +350,14 @@ function cerrarPopup() {
     $('popupOverlay').classList.add('oculta');
 }
 
-// ==================== DIAGNÓSTICO + EJERCICIO ====================
+// ==================== DIAGNÓSTICO (con timer y sin pista) ====================
 function iniciarDiagnosticoTema() {
     if (!temaActual) return;
     cerrarPopup();
-    mostrarPantalla('ejercicioScreen');
+    mostrarPantalla('diagnosticoTemaScreen');
 
-    $('topbarTemaTitulo').textContent = `${temaActual.emoji} ${temaActual.nombre}`;
+    $('diagTemaNombre').textContent = temaActual.nombre;
+    $('diagTemaDesc').textContent = temaActual.desc;
 
     const diagnosticos = temaActual.diagnosticos || temaActual.fallbacks || [];
     const seleccionado = diagnosticos[Math.floor(Math.random() * diagnosticos.length)];
@@ -371,18 +368,54 @@ function iniciarDiagnosticoTema() {
         esDiagnostico: true
     };
 
-    $('enunciadoEjercicio').innerHTML = `
-        <p><strong>🔍 DIAGNÓSTICO INICIAL</strong><br>
-        ${ejercicioActual.texto}</p>`;
+    $('diagTemaEnunciado').innerHTML = `<p>${ejercicioActual.texto}</p>`;
 
-    $('respuestaEjercicio').value = '';
-    $('respuestaEjercicio').disabled = false;
-    $('comprobarEjercicio').disabled = false;
-    $('retroalimentacion').innerHTML = '';
+    const input = $('diagTemaInput');
+    input.value = '';
+    input.disabled = false;
+    $('diagTemaComprobar').disabled = false;
+    $('diagTemaRetro').innerHTML = '';
 
-    initPizarra();
+    let tiempo = 60;
+    const timerEl = $('diagTemaTimer');
+    if (diagTimer) clearInterval(diagTimer);
+
+    diagTimer = setInterval(() => {
+        tiempo--;
+        if (timerEl) timerEl.textContent = tiempo;
+        if (tiempo <= 0) {
+            clearInterval(diagTimer);
+            finalizarDiagnosticoTema(false);
+        }
+    }, 1000);
 }
 
+function finalizarDiagnosticoTema(exito) {
+    if (diagTimer) clearInterval(diagTimer);
+    const input = $('diagTemaInput');
+    if (input) input.disabled = true;
+    if ($('diagTemaComprobar')) $('diagTemaComprobar').disabled = true;
+
+    const retro = $('diagTemaRetro');
+    if (exito) {
+        nivelUsuario = 6.5;
+        retro.innerHTML = `<div class="retro-correcto"><strong>¡Excelente!</strong><br>Empezamos en nivel avanzado.</div>`;
+    } else {
+        nivelUsuario = 2.5;
+        retro.innerHTML = `<div class="retro-incorrecto"><strong>Empecemos desde lo básico</strong></div>`;
+    }
+
+    actualizarScoreUI();
+
+    setTimeout(() => {
+        ejercicioActual.esDiagnostico = false;
+        mostrarPantalla('ejercicioScreen');
+        $('topbarTemaTitulo').textContent = `${temaActual.emoji} ${temaActual.nombre}`;
+        cargarEjercicio();
+    }, 2200);
+}
+
+// ==================== EJERCICIOS NORMALES ====================
 async function cargarEjercicio() {
     if (!temaActual) return;
     const enunciadoEl = $('enunciadoEjercicio');
@@ -415,45 +448,6 @@ Respuesta: [número]`;
     const sel = fallbacks[Math.floor(Math.random() * fallbacks.length)];
     ejercicioActual = { texto: sel.texto, respuesta: sel.respuesta };
     enunciadoEl.innerHTML = `<p>${ejercicioActual.texto}</p>`;
-}
-
-async function analizarError() {
-    const chatBox = $('daskyChatBox');
-    if (chatBox) chatBox.classList.remove('oculta');
-    const fab = $('daskyToggle');
-    if (fab) fab.classList.add('oculta');
-
-    const mensajes = $('daskyMessages');
-    if (!mensajes) return;
-
-    const userMsg = document.createElement('div');
-    userMsg.className = 'msg-user';
-    userMsg.textContent = `Mi respuesta fue ${document.getElementById('respuestaEjercicio').value}`;
-    mensajes.appendChild(userMsg);
-
-    const loading = document.createElement('div');
-    loading.className = 'msg-cargando';
-    loading.textContent = '🤖 Dasky analizando tu error...';
-    mensajes.appendChild(loading);
-    mensajes.scrollTop = mensajes.scrollHeight;
-
-    const prompt = `Ejercicio: ${ejercicioActual.texto}
-Respuesta del estudiante: ${document.getElementById('respuestaEjercicio').value}
-Respuesta correcta: ${ejercicioActual.respuesta}
-
-Clasifica el error y explícalo paso a paso.`;
-
-    try {
-        const respuesta = await callOpenRouter(prompt);
-        loading.remove();
-        const daskyMsg = document.createElement('div');
-        daskyMsg.className = 'msg-dasky';
-        daskyMsg.innerHTML = `<strong>Dasky:</strong><br>${respuesta}`;
-        mensajes.appendChild(daskyMsg);
-    } catch (e) {
-        loading.textContent = '❌ Error de conexión. Inténtalo de nuevo.';
-    }
-    mensajes.scrollTop = mensajes.scrollHeight;
 }
 
 async function comprobarRespuesta() {
@@ -499,7 +493,46 @@ async function comprobarRespuesta() {
     }
 }
 
-// ==================== DASKY ====================
+async function analizarError() {
+    const chatBox = $('daskyChatBox');
+    if (chatBox) chatBox.classList.remove('oculta');
+    const fab = $('daskyToggle');
+    if (fab) fab.classList.add('oculta');
+
+    const mensajes = $('daskyMessages');
+    if (!mensajes) return;
+
+    const userMsg = document.createElement('div');
+    userMsg.className = 'msg-user';
+    userMsg.textContent = `Mi respuesta fue ${document.getElementById('respuestaEjercicio').value}`;
+    mensajes.appendChild(userMsg);
+
+    const loading = document.createElement('div');
+    loading.className = 'msg-cargando';
+    loading.textContent = '🤖 Dasky analizando tu error...';
+    mensajes.appendChild(loading);
+    mensajes.scrollTop = mensajes.scrollHeight;
+
+    const prompt = `Ejercicio: ${ejercicioActual.texto}
+Respuesta del estudiante: ${document.getElementById('respuestaEjercicio').value}
+Respuesta correcta: ${ejercicioActual.respuesta}
+
+Clasifica el error y explícalo paso a paso.`;
+
+    try {
+        const respuesta = await callOpenRouter(prompt);
+        loading.remove();
+        const daskyMsg = document.createElement('div');
+        daskyMsg.className = 'msg-dasky';
+        daskyMsg.innerHTML = `<strong>Dasky:</strong><br>${respuesta}`;
+        mensajes.appendChild(daskyMsg);
+    } catch (e) {
+        loading.textContent = '❌ Error de conexión.';
+    }
+    mensajes.scrollTop = mensajes.scrollHeight;
+}
+
+// ==================== DASKY CHAT ====================
 function setupDasky() {
     const chatBox = $('daskyChatBox');
     const fab = $('daskyToggle');
