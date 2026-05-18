@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     
     try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 20000);
+        const timeout = setTimeout(() => controller.abort(), 40000);
         
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
                 'X-Title': 'Didasky'
             },
             body: JSON.stringify({
-                model: "qwen/qwen3-32b",
+                model: "deepseek/deepseek-v3.2",
                 messages: [
                     {
                         role: 'system',
