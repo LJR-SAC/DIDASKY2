@@ -31,7 +31,7 @@ export default async function handler(req, res) {
                 'X-Title': 'Didasky'
             },
             body: JSON.stringify({
-                model: "nvidia/nemotron-3-super-120b-a12b:free",
+                model: "qwen/qwen3-32b",
                 messages: [
                     {
                         role: 'system',
