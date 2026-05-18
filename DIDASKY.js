@@ -313,14 +313,29 @@ function actualizarProgresoBarra() {
         barra.style.width = `${porcentaje}%`;
     }
 }
-// ==================== Resto de funciones (sin cambios) ====================
+
 function actualizarScoreUI() {
+    // Scores en topbar
     document.querySelectorAll('#scoreTop, #scoreEjercicio').forEach(el => {
         if (el) el.textContent = nivelUsuario.toFixed(1);
     });
-    if ($('nivelActual')) $('nivelActual').textContent = nivelUsuario.toFixed(1);
-    if ($('nivelBadgeMapa')) $('nivelBadgeMapa').textContent = nivelUsuario.toFixed(1);
-    actualizarProgresoBarra()
+
+    // Nivel en Mapa
+    if ($('nivelBadgeMapa')) {
+        $('nivelBadgeMapa').textContent = nivelUsuario.toFixed(1);
+    }
+
+    // Nivel en pantalla de ejercicio
+    if ($('nivelActual')) {
+        $('nivelActual').textContent = nivelUsuario.toFixed(1);
+    }
+
+    // Barra de progreso
+    const barra = $('progresoBarra');
+    if (barra) {
+        const porcentaje = (nivelUsuario / 10) * 100;
+        barra.style.width = `${porcentaje}%`;
+    }
 }
 
 function construirMapa() { /* tu código original */ 
