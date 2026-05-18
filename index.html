@@ -81,7 +81,32 @@
         <button class="popup-cerrar-btn" id="popupCerrar">✕</button>
     </div>
 </section>
-
+<!-- Pantalla de diagnóstico del tema -->
+<section id="diagnosticoTemaScreen" class="pantalla oculta">
+    <header class="topbar">
+        <button id="btnVolverMapaDiagnostico" class="btn-volver">← Mapa</button>
+        <span class="topbar-tema-titulo" id="diagTemaNombre">MRU</span>
+        <div class="score-pill">⭐ <span id="scoreDiagnostico">0</span></div>
+    </header>
+    <div class="ejercicio-outer">
+        <div class="pergamino-card">
+            <div class="ejercicio-meta-row">
+                <div class="nivel-tag-ej">⚓ Diagnóstico rápido</div>
+                <div class="progreso-wrap">
+                    <div class="progreso-barra" id="progresoDiag" style="width:0%"></div>
+                </div>
+                <div class="timer-pill">⏱️ <span id="diagTemaTimer">60</span> s</div>
+            </div>
+            <div id="diagTemaDesc" class="diag-desc"></div>
+            <div id="diagTemaEnunciado" class="enunciado-box"></div>
+            <div class="respuesta-zona">
+                <input type="number" id="diagTemaInput" class="input-pirata" placeholder="Tu respuesta numérica..." autocomplete="off">
+                <button id="diagTemaComprobar" class="btn-comprobar">⚓ Comprobar</button>
+            </div>
+            <div id="diagTemaRetro" class="retro-zona"></div>
+        </div>
+    </div>
+</section>
 <!-- Pantalla de ejercicios -->
 <section id="ejercicioScreen" class="pantalla oculta">
     <header class="topbar">
