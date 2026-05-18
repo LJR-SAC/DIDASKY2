@@ -373,12 +373,17 @@ function iniciarDiagnosticoTema() {
     const input = $('diagTemaInput');
     input.value = '';
     input.disabled = false;
-    $('diagTemaComprobar').disabled = false;
+    
+
+
     $('diagTemaRetro').innerHTML = '';
+
+    // Limpiar timer anterior si existe
+    if (diagTimer) clearInterval(diagTimer);
 
     let tiempo = 60;
     const timerEl = $('diagTemaTimer');
-    if (diagTimer) clearInterval(diagTimer);
+    if (timerEl) timerEl.textContent = tiempo;
 
     diagTimer = setInterval(() => {
         tiempo--;
@@ -389,7 +394,6 @@ function iniciarDiagnosticoTema() {
         }
     }, 1000);
 }
-
 function finalizarDiagnosticoTema(exito) {
     if (diagTimer) clearInterval(diagTimer);
     const input = $('diagTemaInput');
@@ -398,10 +402,10 @@ function finalizarDiagnosticoTema(exito) {
 
     const retro = $('diagTemaRetro');
     if (exito) {
-        nivelUsuario = 6.5;
+        nivelUsuario = 4.5;
         retro.innerHTML = `<div class="retro-correcto"><strong>¡Excelente!</strong><br>Empezamos en nivel avanzado.</div>`;
     } else {
-        nivelUsuario = 2.5;
+        nivelUsuario = 0.5;
         retro.innerHTML = `<div class="retro-incorrecto"><strong>Empecemos desde lo básico</strong></div>`;
     }
 
@@ -590,12 +594,38 @@ function setupDasky() {
         enviarMensaje(`Dame una pista para el tema actual: ${temaActual?.nombre}`);
     });
 };
-
+function setupDiagnosticoEventos() {
+    const comprobarBtn = $('diagTemaComprobar');
+    if (comprobarBtn) {
+        // Eliminar listeners anteriores clonando y reemplazando
+        const nuevoBtn = comprobarBtn.cloneNode(true);
+        comprobarBtn.parentNode.replaceChild(nuevoBtn, comprobarBtn);
+        
+        nuevoBtn.addEventListener('click', () => {
+            // No limpiamos el timer aquí porque lo hace finalizarDiagnosticoTema
+            const input = $('diagTemaInput');
+            if (!input || !ejercicioActual) return;
+            
+            const userVal = parseFloat(input.value.replace(',', '.'));
+            const correcta = ejercicioActual.respuesta;
+            
+            if (isNaN(userVal)) {
+                const retro = $('diagTemaRetro');
+                if (retro) retro.innerHTML = `<div class="retro-warning">⚠️ Ingresa un número válido.</div>`;
+                return;
+            }
+            
+            const margen = Math.max(Math.abs(correcta * 0.15), 0.5);
+            const esCorrecto = Math.abs(userVal - correcta) <= margen;
+            finalizarDiagnosticoTema(esCorrecto);
+        });
+    }
+}
 // ==================== INICIO ====================
 document.addEventListener('DOMContentLoaded', () => {
     actualizarScoreUI();
     initPizarra();
-
+    setupDiagnosticoEventos();
     document.querySelectorAll('.materia-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.materia-btn').forEach(b => b.classList.remove('activa-materia'));
