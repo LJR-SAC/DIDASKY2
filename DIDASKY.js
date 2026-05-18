@@ -429,7 +429,7 @@ async function cargarEjercicio() {
     $('retroalimentacion').innerHTML = '';
 
     try {
-        const prompt = `Eres un excelente profesor, hablas español y das las respuestas en texto plano, sin formato como negrita o cursiva . Genera un ejercicio largo y bien explicado de ${temaActual.nombre} nivel ${nivelUsuario.toFixed(1)}, si es nivel 1 2 o 3 no hay que darle problemas tan largos, arriba de 3 sí que sean largos.
+        const prompt = `Eres un excelente profesor, hablas español y das las respuestas en texto plano, sin formato como negrita o cursiva . Genera un ejercicio largo y bien explicado de ${temaActual.nombre} nivel ${nivelUsuario.toFixed(1)}, .
 Responde exactamente así:
 Enunciado: [texto largo y detallado]
 Respuesta: [número]`;
