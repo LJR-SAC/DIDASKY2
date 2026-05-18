@@ -378,15 +378,24 @@ function iniciarDiagnosticoTema() {
     mostrarPantalla('ejercicioScreen');
     $('topbarTemaTitulo').textContent = `${temaActual.emoji} ${temaActual.nombre}`;
 
+    // Seleccionamos un buen diagnóstico
     const diagnosticos = temaActual.diagnosticos || temaActual.fallbacks || [];
     const seleccionado = diagnosticos[Math.floor(Math.random() * diagnosticos.length)];
 
-    ejercicioActual = { texto: seleccionado.texto, respuesta: seleccionado.respuesta };
+    ejercicioActual = { 
+        texto: seleccionado.texto, 
+        respuesta: seleccionado.respuesta,
+        esDiagnostico: true   // ← Marca que es diagnóstico
+    };
 
-    $('enunciadoEjercicio').innerHTML = `<p><strong>Diagnóstico inicial:</strong><br>${ejercicioActual.texto}</p>`;
+    $('enunciadoEjercicio').innerHTML = `
+        <p><strong>🔍 DIAGNÓSTICO INICIAL</strong><br>
+        Resuelve este problema para ajustar tu nivel en este tema:</p>
+        <p>${ejercicioActual.texto}</p>`;
 
-    $('respuestaEjercicio').value = '';
-    $('respuestaEjercicio').disabled = false;
+    const input = $('respuestaEjercicio');
+    input.value = '';
+    input.disabled = false;
     $('comprobarEjercicio').disabled = false;
     $('retroalimentacion').innerHTML = '';
 
@@ -483,33 +492,72 @@ async function comprobarRespuesta() {
     }
 
     const correcta = ejercicioActual.respuesta;
-    const margen = Math.max(Math.abs(correcta * 0.12), 0.01);
+    const margen = Math.max(Math.abs(correcta * 0.15), 0.5);
     const esCorrecto = Math.abs(userVal - correcta) <= margen;
 
-    if (esCorrecto) {
-        nivelUsuario = Math.min(10, nivelUsuario + 0.5);
-        retroEl.innerHTML = `<div class="retro-correcto"><strong>🎉 ¡Correcto!</strong><br>Excelente trabajo.</div>`;
+    // ==================== SI ES DIAGNÓSTICO ====================
+    if (ejercicioActual.esDiagnostico) {
+        if (esCorrecto) {
+            nivelUsuario = 6.5;
+            retroEl.innerHTML = `<div class="retro-correcto">
+                <strong>¡Muy bien!</strong><br>
+                Tienes un buen nivel en este tema. Empezamos en nivel avanzado.
+            </div>`;
+        } else {
+            const diferencia = Math.abs(userVal - correcta);
+            if (diferencia < correcta * 0.45) {
+                nivelUsuario = 4.0;
+                retroEl.innerHTML = `<div class="retro-warning">
+                    <strong>Casi correcto</strong><br>
+                    Empezaremos en nivel intermedio.
+                </div>`;
+            } else {
+                nivelUsuario = 2.0;
+                retroEl.innerHTML = `<div class="retro-incorrecto">
+                    <strong>Vamos desde lo básico</strong><br>
+                    Reforzaremos los fundamentos.
+                </div>`;
+            }
+        }
+
         inputEl.disabled = true;
         $('comprobarEjercicio').disabled = true;
         actualizarScoreUI();
-        setTimeout(cargarEjercicio, 2200);
-    } else {
-        nivelUsuario = Math.max(1, nivelUsuario - 0.35);
-        actualizarScoreUI();
 
-        retroEl.innerHTML = `
-        <div class="retro-incorrecto">
-            <strong>❌ Incorrecto</strong><br>
-            Tu respuesta: <strong>${userVal}</strong> | Correcta: <strong>${correcta}</strong><br><br>
-            <button id="analizarErrorBtn" class="btn-pista" style="width:100%; margin-top:10px;">
-                🤖 Analizar mi error con Dasky
-            </button>
-        </div>`;
-
+        // Pasamos a ejercicios normales después del diagnóstico
         setTimeout(() => {
-            const btn = $('analizarErrorBtn');
-            if (btn) btn.addEventListener('click', analizarError);
-        }, 100);
+            ejercicioActual.esDiagnostico = false;
+            cargarEjercicio();
+        }, 2800);
+
+    } 
+    // ==================== EJERCICIO NORMAL ====================
+    else {
+        if (esCorrecto) {
+            nivelUsuario = Math.min(10, nivelUsuario + 0.5);
+            retroEl.innerHTML = `<div class="retro-correcto"><strong>🎉 ¡Correcto!</strong><br>Excelente trabajo, navegante.</div>`;
+            inputEl.disabled = true;
+            $('comprobarEjercicio').disabled = true;
+            actualizarScoreUI();
+            setTimeout(cargarEjercicio, 2200);
+        } else {
+            nivelUsuario = Math.max(1, nivelUsuario - 0.35);
+            actualizarScoreUI();
+
+            retroEl.innerHTML = `
+            <div class="retro-incorrecto">
+                <strong>❌ Incorrecto</strong><br>
+                Tu respuesta: <strong>${userVal}</strong> | Correcta: <strong>${correcta}</strong><br><br>
+                <button id="analizarErrorBtn" class="btn-pista" style="width:100%; margin-top:10px;">
+                    🤖 Analizar mi error con Dasky
+                </button>
+            </div>`;
+
+            setTimeout(() => {
+                const btn = $('analizarErrorBtn');
+                if (btn) btn.addEventListener('click', analizarError);
+            }, 100);
+        }
     }
 }
 
