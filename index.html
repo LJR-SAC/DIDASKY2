@@ -46,29 +46,7 @@
     </div>
 </section>
 
-<!-- Pantalla de diagnóstico global (antes del mapa) -->
-<section id="diagnosticoScreen" class="pantalla oculta">
-    <div class="pergamino-card" style="max-width: 720px; margin: 40px auto; padding: 2rem;">
-        <h2 style="text-align:center; color:var(--oro-bright); margin-bottom:1rem;">🧭 Diagnóstico del Navegante</h2>
-        <p style="text-align:center; margin-bottom:1.5rem; color:var(--perg-dark);">
-            Resuelve este problema rápidamente para que podamos ajustar el nivel.
-        </p>
-        <div id="diagProblema" class="enunciado-box" style="min-height: 100px;"></div>
-        <div class="respuesta-zona">
-            <input type="number" id="diagRespuesta" class="input-pirata" placeholder="Tu respuesta numérica..." autocomplete="off">
-            <button id="diagEnviar" class="btn-comprobar">Responder</button>
-        </div>
-        <div id="diagResultado" class="retro-zona oculta"></div>
-        <div style="text-align:center; margin-top:1.2rem; color:var(--perg-dark);">
-            Tiempo restante: <strong id="timerText" style="color:var(--oro-bright); font-size:1.1rem;">60</strong> segundos
-            <div class="progreso-wrap" style="margin-top:8px;">
-                <div id="timerBar" class="progreso-barra" style="width:100%"></div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Pantalla del mapa de temas -->
+<!-- Pantalla del mapa -->
 <section id="mapaScreen" class="pantalla oculta">
     <header class="topbar">
         <div class="topbar-izq">
@@ -93,7 +71,7 @@
         </div>
     </div>
 
-    <!-- Popup nodo -->
+    <!-- Popup -->
     <div class="popup-overlay oculta" id="popupOverlay"></div>
     <div id="nodoPopup" class="nodo-popup oculta">
         <div class="popup-icono" id="popupIcono">🚗</div>
@@ -119,37 +97,42 @@
                     <div class="progreso-barra" id="progresoBarra" style="width:50%"></div>
                 </div>
             </div>
+
             <div id="enunciadoEjercicio" class="enunciado-box">
-                <div class="cargando-msg">🧭 Generando reto del mapa...</div>
+                <div class="cargando-msg">🧭 Generando reto...</div>
             </div>
+
+            <!-- PIZARRA -->
+            <div id="pizarraContainer" class="pizarra-container">
+                <div class="pizarra-header">
+                    <span>🖍️ Pizarra de Diagramas</span>
+                    <div class="pizarra-tools">
+                        <button class="tool-btn active" data-tool="pen" title="Lápiz">✏️</button>
+                        <button class="tool-btn" data-tool="eraser" title="Borrador">⌫</button>
+                        <button class="tool-btn" data-color="#ff4444" title="Rojo">🔴</button>
+                        <button class="tool-btn" data-color="#44aaff" title="Azul">🔵</button>
+                        <button class="tool-btn" data-color="#44ff88" title="Verde">🟢</button>
+                    </div>
+                    <button id="clearCanvas" class="btn-saltar" style="margin-left:auto;">🗑️ Limpiar</button>
+                    <button id="togglePizarra" class="btn-saltar">👁️ Ocultar</button>
+                </div>
+                <canvas id="pizarraCanvas" class="pizarra-canvas" width="780" height="320"></canvas>
+                <div class="pizarra-footer">
+                    <button id="saveCanvas" class="btn-pista" style="flex:1;">💾 Guardar dibujo como PNG</button>
+                </div>
+            </div>
+
             <div class="respuesta-zona">
                 <input type="number" id="respuestaEjercicio" class="input-pirata" placeholder="Tu respuesta numérica..." autocomplete="off">
                 <button id="comprobarEjercicio" class="btn-comprobar">⚓ Comprobar</button>
             </div>
+
             <div id="retroalimentacion" class="retro-zona"></div>
+
             <div class="acciones-row">
                 <button id="ayudaDasky" class="btn-pista">🤖 Pedir pista a Dasky</button>
                 <button id="saltarEjercicio" class="btn-saltar">↩ Saltar</button>
             </div>
-        </div>
-    </div>
-</section>
-
-<!-- Pantalla de diagnóstico rápido por tema -->
-<section id="diagnosticoTemaScreen" class="pantalla oculta">
-    <div class="pergamino-card" style="max-width: 720px; margin: 40px auto; padding: 2.5rem;">
-        <h2 style="text-align:center; color:var(--oro-bright); margin-bottom:1rem;">
-            ⚓ Diagnóstico Rápido — <span id="diagTemaNombre"></span>
-        </h2>
-        <p style="text-align:center; margin-bottom:1.5rem; color:var(--perg-dark);" id="diagTemaDesc"></p>
-        <div id="diagTemaEnunciado" class="enunciado-box" style="min-height: 140px;"></div>
-        <div class="respuesta-zona">
-            <input type="number" id="diagTemaInput" class="input-pirata" placeholder="Tu respuesta numérica..." autocomplete="off">
-            <button id="diagTemaComprobar" class="btn-comprobar">Comprobar (60s)</button>
-        </div>
-        <div id="diagTemaRetro" class="retro-zona"></div>
-        <div style="text-align:center; margin-top:1.2rem; color:var(--perg-dark);">
-            Tiempo restante: <strong id="diagTemaTimer" style="color:var(--oro-bright); font-size:1.1rem;">60</strong> segundos
         </div>
     </div>
 </section>
@@ -163,7 +146,7 @@
     <div id="daskyMessages" class="dasky-mensajes">
         <div class="msg-dasky">
             <strong>Dasky:</strong><br>
-            ¡Ahoy, navegante! Pregúntame lo que necesites. Daré pistas, ¡no respuestas directas!
+            ¡Ahoy, navegante! Pregúntame lo que necesites.
         </div>
     </div>
     <div class="dasky-footer">
