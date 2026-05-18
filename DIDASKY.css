@@ -1,4 +1,3 @@
-
 *, *::before, *::after {
     margin: 0; padding: 0;
     box-sizing: border-box;
@@ -42,6 +41,72 @@ body {
 .activa   { display: flex; flex-direction: column; }
 .oculta   { display: none !important; }
 
+/* ====================== PIZARRA ====================== */
+.pizarra-container {
+    margin: 1.5rem 0;
+    border: 3px solid var(--oro-dark);
+    border-radius: 12px;
+    background: #0a0a0a;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,.6);
+}
+
+.pizarra-header {
+    background: linear-gradient(90deg, #1a0f08, #3a2210);
+    padding: .6rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--oro-bright);
+    font-family: var(--font-cinzel);
+    font-size: .85rem;
+    flex-wrap: wrap;
+}
+
+.pizarra-tools {
+    display: flex;
+    gap: .5rem;
+}
+
+.tool-btn {
+    width: 36px; height: 36px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(201,147,42,.4);
+    color: var(--oro);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all .2s;
+}
+
+.tool-btn.active {
+    background: var(--oro-bright);
+    color: var(--tinta);
+    border-color: var(--oro);
+    transform: scale(1.1);
+}
+
+.pizarra-canvas {
+    display: block;
+    background: #111;
+    cursor: crosshair;
+    touch-action: none;
+    width: 100%;
+    height: auto;
+}
+
+.pizarra-footer {
+    padding: .6rem;
+    display: flex;
+    gap: .6rem;
+    background: rgba(0,0,0,.6);
+}
+
+/* ====================== RESTO DEL ESTILO ORIGINAL ====================== */
+
 #inicioScreen {
     position: relative;
     justify-content: center;
@@ -52,7 +117,6 @@ body {
         linear-gradient(175deg, #0f1e30 0%, #0a1525 45%, #060e1a 100%);
     overflow: hidden;
 }
-
 
 .estrellas {
     position: absolute;
@@ -125,7 +189,6 @@ body {
     letter-spacing: .07em;
     opacity: .88;
 }
-
 
 .materia-selector { width: 100%; max-width: 560px; }
 
@@ -235,7 +298,6 @@ body {
     50%      { transform: translateX(0%)  scaleY(1.18); }
 }
 
-
 .topbar {
     width: 100%;
     background: linear-gradient(90deg, #180d06, #2d1a0a, #180d06);
@@ -331,7 +393,6 @@ body {
     text-shadow: 0 0 10px rgba(240,180,41,.4);
 }
 
-
 .mapa-outer {
     flex: 1;
     display: flex;
@@ -402,7 +463,6 @@ body {
     position: relative;
 }
 
-
 .ruta-vertical::before {
     content: '';
     position: absolute;
@@ -422,7 +482,6 @@ body {
     z-index: 0;
 }
 
-
 .nodo-item {
     display: flex;
     align-items: center;
@@ -432,7 +491,6 @@ body {
     padding: .6rem 0;
     cursor: pointer;
 }
-
 
 .nodo-item.izq { flex-direction: row; }
 .nodo-item.der { flex-direction: row-reverse; }
@@ -464,20 +522,6 @@ body {
     border-color: var(--oro-bright);
 }
 
-/* Estilos por índice */
-.nodo-btn[data-idx="0"] { background: linear-gradient(145deg, #ddb060, #b87030); }
-.nodo-btn[data-idx="1"] { background: linear-gradient(145deg, #c99840, #a06820); }
-.nodo-btn[data-idx="2"] { background: linear-gradient(145deg, #ba8535, #8b5518); }
-.nodo-btn[data-idx="3"] { background: linear-gradient(145deg, #cb9438, #9b6418); }
-.nodo-btn[data-idx="4"] { background: linear-gradient(145deg, #d4a040, #a06820); }
-.nodo-btn[data-idx="5"] {
-    background: linear-gradient(145deg, #8b1a1a, #5c0a0a);
-    border-color: var(--oro-bright);
-    box-shadow: 0 8px 22px rgba(0,0,0,.3), 0 0 24px rgba(240,180,41,.5);
-    width: 96px; height: 96px;
-    font-size: 2.3rem;
-}
-
 .nodo-label-btn {
     font-family: var(--font-cinzel);
     font-size: .52rem;
@@ -487,7 +531,6 @@ body {
     line-height: 1;
     margin-top: 2px;
 }
-
 
 .nodo-linea-h {
     flex: 1;
@@ -502,7 +545,6 @@ body {
     opacity: .4;
     max-width: 80px;
 }
-
 
 .nodo-card {
     background: rgba(255,255,255,.45);
@@ -534,7 +576,7 @@ body {
     line-height: 1.4;
 }
 
-/* ── Popup ── */
+/* Popup */
 .popup-overlay {
     position: fixed;
     inset: 0;
@@ -615,7 +657,7 @@ body {
 }
 .popup-cerrar-btn:hover { color: var(--oro-bright); background: rgba(255,255,255,.07); }
 
-
+/* Ejercicio */
 .ejercicio-outer {
     flex: 1;
     display: flex;
@@ -646,7 +688,6 @@ body {
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Meta row */
 .ejercicio-meta-row {
     display: flex;
     align-items: center;
@@ -680,7 +721,6 @@ body {
     border-radius: 99px;
     transition: width .6s ease;
 }
-
 
 .enunciado-box {
     background: rgba(139,94,60,.07);
@@ -721,7 +761,6 @@ body {
     50%      { opacity: .4; }
 }
 
-
 .respuesta-zona {
     display: flex;
     gap: 1rem;
@@ -749,8 +788,6 @@ body {
     background: rgba(255,255,255,.82);
 }
 
-.input-pirata:disabled { opacity: .5; cursor: not-allowed; }
-
 .btn-comprobar {
     font-family: var(--font-pirata);
     font-size: 1.1rem;
@@ -769,8 +806,6 @@ body {
 }
 
 .btn-comprobar:hover  { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(201,147,42,.6); }
-.btn-comprobar:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-
 
 .retro-zona { margin-bottom: 1.5rem; }
 
@@ -808,7 +843,6 @@ body {
     font-size: .9rem;
     animation: slideUp .3s ease;
 }
-
 
 .acciones-row {
     display: flex;
@@ -852,7 +886,7 @@ body {
 
 .btn-saltar:hover { background: rgba(139,94,60,.2); color: var(--tinta); }
 
-
+/* Dasky Chat */
 .dasky-chat {
     position: fixed;
     right: 24px;
@@ -911,9 +945,6 @@ body {
     scrollbar-color: var(--oro-dark) transparent;
 }
 
-.dasky-mensajes::-webkit-scrollbar { width: 5px; }
-.dasky-mensajes::-webkit-scrollbar-thumb { background: var(--oro-dark); border-radius: 3px; }
-
 .msg-dasky {
     background: rgba(201,147,42,.1);
     border: 1px solid rgba(201,147,42,.22);
@@ -970,7 +1001,6 @@ body {
     transition: border-color .2s;
 }
 .dasky-input:focus { border-color: var(--oro); }
-.dasky-input::placeholder { color: rgba(244,228,193,.35); }
 
 .dasky-send {
     width: 38px; height: 38px;
@@ -1007,14 +1037,14 @@ body {
     align-items: center;
     justify-content: center;
     transition: transform .2s, box-shadow .2s;
-    animation: popIn .4s .5s both;
 }
+
 .dasky-fab:hover {
     transform: scale(1.12) rotate(-6deg);
     box-shadow: 0 12px 34px rgba(201,147,42,.75);
 }
 
-
+/* Responsive */
 @media (max-width: 600px) {
     .pergamino-mapa, .pergamino-card { padding: 1.5rem 1.2rem; }
     .nodo-card { display: none; }
@@ -1028,4 +1058,5 @@ body {
     .materia-opciones { flex-direction: column; align-items: center; }
     .materia-btn { max-width: 100%; }
     .acciones-row { flex-direction: column; }
+    .pizarra-header { flex-direction: column; align-items: flex-start; gap: .8rem; }
 }
