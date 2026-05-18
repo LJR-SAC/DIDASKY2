@@ -594,6 +594,7 @@ function setupDasky() {
 // ==================== INICIO ====================
 document.addEventListener('DOMContentLoaded', () => {
     actualizarScoreUI();
+    initPizarra();
 
     document.querySelectorAll('.materia-btn').forEach(btn => {
         btn.addEventListener('click', () => {
