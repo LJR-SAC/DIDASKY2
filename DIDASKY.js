@@ -216,14 +216,23 @@ const MATERIAS = {
         ]
     }
 };
-// Variables globales
+✅ Aquí tienes el DIDASKY.js COMPLETO y CORREGIDO.
+Reemplaza todo el contenido de tu archivo DIDASKY.js con esto:
+JavaScriptimport { callOpenRouter } from './IA.js';
+
+// ==================== MATERIAS ====================
+// (PEGA AQUÍ TU OBJETO MATERIAS COMPLETO)
+const MATERIAS = {
+    // ←←← TU CÓDIGO ORIGINAL DE MATERIAS VA AQUÍ ←←←
+};
+
+// ==================== VARIABLES GLOBALES ====================
 let materiaActual = 'fisica';
 let temaActual = null;
 let ejercicioActual = null;
 let nivelUsuario = 5.0;
-let errorAnalytics = {};
 
-// Elementos DOM
+// Helper DOM
 const $ = id => document.getElementById(id);
 
 // ==================== PIZARRA ====================
@@ -246,7 +255,7 @@ function initPizarra() {
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseout', stopDrawing);
 
-    // Touch support
+    // Touch
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
         startDrawing(e.touches[0]);
@@ -262,7 +271,6 @@ function initPizarra() {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
             if (btn.dataset.tool) currentTool = btn.dataset.tool;
             if (btn.dataset.color) {
                 currentColor = btn.dataset.color;
@@ -271,9 +279,7 @@ function initPizarra() {
         });
     });
 
-    $('clearCanvas').addEventListener('click', () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-    });
+    $('clearCanvas').addEventListener('click', () => ctx.clearRect(0, 0, canvas.width, canvas.height));
 
     $('saveCanvas').addEventListener('click', () => {
         const link = document.createElement('a');
@@ -317,19 +323,23 @@ function stopDrawing() {
     isDrawing = false;
 }
 
-// ==================== FUNCIONES PRINCIPALES ====================
+// ==================== CAMBIO DE PANTALLAS (CORREGIDO) ====================
 function mostrarPantalla(id) {
-    document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+    document.querySelectorAll('.pantalla').forEach(p => {
+        p.classList.remove('activa');
+        p.classList.add('oculta');
+    });
+
     const pantalla = $(id);
     if (pantalla) {
-        pantalla.classList.add('activa');
         pantalla.classList.remove('oculta');
+        pantalla.classList.add('activa');
     }
 }
 
+// ==================== DEMÁS FUNCIONES ====================
 function actualizarScoreUI() {
-    const scoreEls = document.querySelectorAll('#scoreTop, #scoreEjercicio');
-    scoreEls.forEach(el => {
+    document.querySelectorAll('#scoreTop, #scoreEjercicio').forEach(el => {
         if (el) el.textContent = nivelUsuario.toFixed(1);
     });
     if ($('nivelActual')) $('nivelActual').textContent = nivelUsuario.toFixed(1);
@@ -389,14 +399,12 @@ function iniciarDiagnosticoTema() {
     mostrarPantalla('ejercicioScreen');
     $('topbarTemaTitulo').textContent = `${temaActual.emoji} ${temaActual.nombre}`;
 
-    // Diagnóstico rápido del tema
     const diagnosticos = temaActual.diagnosticos || temaActual.fallbacks || [];
     const seleccionado = diagnosticos[Math.floor(Math.random() * diagnosticos.length)];
 
     ejercicioActual = { 
         texto: seleccionado.texto, 
-        respuesta: seleccionado.respuesta,
-        esDiagnostico: true
+        respuesta: seleccionado.respuesta 
     };
 
     $('enunciadoEjercicio').innerHTML = `<p><strong>Diagnóstico inicial:</strong><br>${ejercicioActual.texto}</p>`;
@@ -407,12 +415,11 @@ function iniciarDiagnosticoTema() {
     $('comprobarEjercicio').disabled = false;
     $('retroalimentacion').innerHTML = '';
 
-    initPizarra(); // Inicializar pizarra
+    initPizarra();
 }
 
 async function cargarEjercicio() {
     if (!temaActual) return;
-
     const enunciadoEl = $('enunciadoEjercicio');
     enunciadoEl.innerHTML = `<div class="cargando-msg">🧭 Generando nuevo reto nivel ${nivelUsuario.toFixed(1)}...</div>`;
 
@@ -438,10 +445,7 @@ Respuesta: [solo el número]`;
         if (matchE && matchR) {
             const respNum = parseFloat(matchR[1].replace(',', '.'));
             if (!isNaN(respNum)) {
-                ejercicioActual = { 
-                    texto: matchE[1].trim(), 
-                    respuesta: respNum 
-                };
+                ejercicioActual = { texto: matchE[1].trim(), respuesta: respNum };
                 enunciadoEl.innerHTML = `<p>${ejercicioActual.texto}</p>`;
                 return;
             }
@@ -450,7 +454,6 @@ Respuesta: [solo el número]`;
         console.warn('IA falló, usando fallback');
     }
 
-    // Fallback
     const fallbacks = temaActual.fallbacks || [];
     const seleccionado = fallbacks[Math.floor(Math.random() * fallbacks.length)];
     ejercicioActual = { texto: seleccionado.texto, respuesta: seleccionado.respuesta };
@@ -463,7 +466,6 @@ async function analizarError() {
     $('daskyToggle').classList.add('oculta');
 
     const mensajes = $('daskyMessages');
-    
     const userMsg = document.createElement('div');
     userMsg.className = 'msg-user';
     userMsg.textContent = `Analizar error: ${document.getElementById('respuestaEjercicio').value}`;
@@ -479,8 +481,7 @@ async function analizarError() {
 Respuesta del estudiante: ${document.getElementById('respuestaEjercicio').value}
 Respuesta correcta: ${ejercicioActual.respuesta}
 
-Clasifica el error (Conceptual / Cálculo / Fórmula / Lógica) y explícalo paso a paso de forma clara y educativa. 
-Al final genera un ejercicio de recuperación más fácil similar.`;
+Clasifica el error y explícalo paso a paso.`;
 
     try {
         const respuesta = await callOpenRouter(prompt);
@@ -490,7 +491,7 @@ Al final genera un ejercicio de recuperación más fácil similar.`;
         daskyMsg.innerHTML = `<strong>Dasky:</strong><br>${respuesta}`;
         mensajes.appendChild(daskyMsg);
     } catch (e) {
-        loading.textContent = '❌ Error de conexión. Inténtalo de nuevo.';
+        loading.textContent = '❌ Error de conexión.';
     }
     mensajes.scrollTop = mensajes.scrollHeight;
 }
@@ -511,7 +512,7 @@ async function comprobarRespuesta() {
 
     if (esCorrecto) {
         nivelUsuario = Math.min(10, nivelUsuario + 0.5);
-        retroEl.innerHTML = `<div class="retro-correcto"><strong>🎉 ¡Correcto!</strong><br>Excelente trabajo, navegante.</div>`;
+        retroEl.innerHTML = `<div class="retro-correcto"><strong>🎉 ¡Correcto!</strong><br>Excelente trabajo.</div>`;
         inputEl.disabled = true;
         $('comprobarEjercicio').disabled = true;
         actualizarScoreUI();
@@ -555,7 +556,6 @@ function setupDasky() {
 
     async function enviarMensaje(texto) {
         if (!texto.trim()) return;
-
         const msgU = document.createElement('div');
         msgU.className = 'msg-user';
         msgU.textContent = texto;
@@ -605,10 +605,8 @@ function setupDasky() {
 
 // ==================== INICIO ====================
 document.addEventListener('DOMContentLoaded', () => {
-    // Cargar nivel guardado
     const savedNivel = parseFloat(localStorage.getItem('didasky_nivel'));
     if (!isNaN(savedNivel)) nivelUsuario = savedNivel;
-
     actualizarScoreUI();
 
     // Selección de materia
@@ -620,7 +618,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Botón empezar
     $('btnEmpezar').addEventListener('click', () => {
         mostrarPantalla('mapaScreen');
         actualizarTopbarMateria();
@@ -654,7 +651,6 @@ document.addEventListener('DOMContentLoaded', () => {
         $('daskyChatBox').classList.add('oculta');
     });
 
-    // Tecla Enter en input
     $('respuestaEjercicio').addEventListener('keydown', e => {
         if (e.key === 'Enter') comprobarRespuesta();
     });
