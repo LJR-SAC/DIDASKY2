@@ -37,9 +37,20 @@ body {
     min-height: 100vh;
 }
 
-.pantalla { width: 100%; min-height: 100vh; }
-.activa   { display: flex; flex-direction: column; }
-.oculta   { display: none !important; }
+.pantalla { 
+    width: 100%; 
+    min-height: 100vh; 
+    display: none;           /* ←←← CAMBIO IMPORTANTE */
+}
+
+.activa   { 
+    display: flex !important; 
+    flex-direction: column; 
+}
+
+.oculta   { 
+    display: none !important; 
+}
 
 /* ====================== PIZARRA ====================== */
 .pizarra-container {
