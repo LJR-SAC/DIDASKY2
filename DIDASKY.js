@@ -216,86 +216,156 @@ const MATERIAS = {
         ]
     }
 };
-
-const DIAGNOSTICO = { titulo: "Resuelve rápido: Un auto viaja 120 km en 2 horas. ¿Cuál es su velocidad?", respuesta: 60, tiempo: 60 };
-
+// Variables globales
 let materiaActual = 'fisica';
 let temaActual = null;
 let ejercicioActual = null;
 let nivelUsuario = 5.0;
-let erroresCorregidos = parseInt(localStorage.getItem('didasky_score')) || 0;
-let diagnosticoRealizado = localStorage.getItem('didasky_diag') === 'true';
-let timerInterval = null;
-let diagTimer = null;
-let diagnosticoActual = null;
-let errorAnalytics = JSON.parse(localStorage.getItem('didasky_errors')) || {};
+let errorAnalytics = {};
 
-function $(id) { return document.getElementById(id); }
+// Elementos DOM
+const $ = id => document.getElementById(id);
 
-function mostrarPantalla(id) {
-    ['inicioScreen', 'mapaScreen', 'ejercicioScreen', 'diagnosticoScreen', 'diagnosticoTemaScreen'].forEach(p => {
-        const el = $(p);
-        if (el) el.classList.toggle('oculta', p !== id);
+// ==================== PIZARRA ====================
+let canvas, ctx, isDrawing = false, lastX = 0, lastY = 0;
+let currentTool = 'pen';
+let currentColor = '#ffdd88';
+
+function initPizarra() {
+    canvas = $('pizarraCanvas');
+    if (!canvas) return;
+    ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = 3;
+
+    // Mouse
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    // Touch support
+    canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        startDrawing(e.touches[0]);
     });
-    const target = $(id);
-    if (target) target.classList.toggle('activa', true);
+    canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        draw(e.touches[0]);
+    });
+    canvas.addEventListener('touchend', stopDrawing);
+
+    // Tools
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            if (btn.dataset.tool) currentTool = btn.dataset.tool;
+            if (btn.dataset.color) {
+                currentColor = btn.dataset.color;
+                ctx.strokeStyle = currentColor;
+            }
+        });
+    });
+
+    $('clearCanvas').addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    $('saveCanvas').addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = `didasky_diagrama_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    });
+
+    $('togglePizarra').addEventListener('click', () => {
+        const cont = $('pizarraContainer');
+        cont.style.display = cont.style.display === 'none' ? 'block' : 'none';
+    });
+}
+
+function startDrawing(e) {
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    lastX = e.clientX - rect.left;
+    lastY = e.clientY - rect.top;
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    ctx.strokeStyle = currentTool === 'eraser' ? '#111' : currentColor;
+    ctx.lineWidth = currentTool === 'eraser' ? 20 : 3.5;
+
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    lastX = x;
+    lastY = y;
+}
+
+function stopDrawing() {
+    isDrawing = false;
+}
+
+// ==================== FUNCIONES PRINCIPALES ====================
+function mostrarPantalla(id) {
+    document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+    const pantalla = $(id);
+    if (pantalla) {
+        pantalla.classList.add('activa');
+        pantalla.classList.remove('oculta');
+    }
 }
 
 function actualizarScoreUI() {
-    ['scoreTop', 'scoreEjercicio'].forEach(id => {
-        const el = $(id);
-        if (el) el.textContent = erroresCorregidos;
+    const scoreEls = document.querySelectorAll('#scoreTop, #scoreEjercicio');
+    scoreEls.forEach(el => {
+        if (el) el.textContent = nivelUsuario.toFixed(1);
     });
-    const nb = $('nivelBadgeMapa');
-    if (nb) nb.textContent = nivelUsuario.toFixed(1);
-    const na = $('nivelActual');
-    if (na) na.textContent = nivelUsuario.toFixed(1);
-    const barra = $('progresoBarra');
-    if (barra) barra.style.width = `${(nivelUsuario / 10) * 100}%`;
-    localStorage.setItem('didasky_score', erroresCorregidos);
-    localStorage.setItem('didasky_nivel', nivelUsuario);
+    if ($('nivelActual')) $('nivelActual').textContent = nivelUsuario.toFixed(1);
+    if ($('nivelBadgeMapa')) $('nivelBadgeMapa').textContent = nivelUsuario.toFixed(1);
 }
 
 function construirMapa() {
     const contenedor = $('rutaVertical');
-    if (!contenedor) return;
     contenedor.innerHTML = '';
-    const materia = MATERIAS[materiaActual];
-    materia.temas.forEach((tema, idx) => {
-        const lado = idx % 2 === 0 ? 'izq' : 'der';
+    const temas = MATERIAS[materiaActual].temas;
+
+    temas.forEach((tema, idx) => {
         const item = document.createElement('div');
-        item.className = `nodo-item ${lado}`;
-        item.dataset.temaId = tema.id;
+        item.className = `nodo-item ${idx % 2 === 0 ? 'izq' : 'der'}`;
+        item.dataset.idx = idx;
+
         const btnNodo = document.createElement('button');
         btnNodo.className = 'nodo-btn';
         btnNodo.dataset.idx = idx;
-        btnNodo.title = tema.nombre;
         btnNodo.innerHTML = `<span>${tema.emoji}</span><span class="nodo-label-btn">${tema.nombre}</span>`;
+
         const lineaH = document.createElement('div');
         lineaH.className = 'nodo-linea-h';
+
         const card = document.createElement('div');
         card.className = 'nodo-card';
         card.innerHTML = `<h3>${tema.emoji} ${tema.nombre}</h3><p>${tema.desc}</p>`;
-        if (lado === 'izq') {
-            item.appendChild(btnNodo);
-            item.appendChild(lineaH);
-            item.appendChild(card);
+
+        if (idx % 2 === 0) {
+            item.append(btnNodo, lineaH, card);
         } else {
-            item.appendChild(card);
-            item.appendChild(lineaH);
-            item.appendChild(btnNodo);
+            item.append(card, lineaH, btnNodo);
         }
+
         item.addEventListener('click', () => abrirPopup(tema));
         contenedor.appendChild(item);
-    });
-    contenedor.querySelectorAll('.nodo-item').forEach((el, i) => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            el.style.transition = 'opacity .5s, transform .5s';
-            el.style.opacity = '1';
-            el.style.transform = 'translateY(0)';
-        }, 100 + i * 100);
     });
 }
 
@@ -304,194 +374,169 @@ function abrirPopup(tema) {
     $('popupIcono').textContent = tema.emoji;
     $('popupNombre').textContent = tema.nombre;
     $('popupDesc').textContent = tema.desc;
-    const popup = $('nodoPopup');
-    const overlay = $('popupOverlay');
-    if (popup) popup.classList.remove('oculta');
-    if (overlay) overlay.classList.remove('oculta');
+    $('nodoPopup').classList.remove('oculta');
+    $('popupOverlay').classList.remove('oculta');
 }
 
 function cerrarPopup() {
-    const popup = $('nodoPopup');
-    const overlay = $('popupOverlay');
-    if (popup) popup.classList.add('oculta');
-    if (overlay) overlay.classList.add('oculta');
+    $('nodoPopup').classList.add('oculta');
+    $('popupOverlay').classList.add('oculta');
 }
 
 function iniciarDiagnosticoTema() {
     if (!temaActual) return;
     cerrarPopup();
-    mostrarPantalla('diagnosticoTemaScreen');
-    $('diagTemaNombre').textContent = temaActual.nombre;
-    $('diagTemaDesc').textContent = temaActual.desc;
-    const diagnosticos = temaActual.diagnosticos || [];
-    if (diagnosticos.length === 0) {
-        diagnosticoActual = { texto: "Calcula: 5 + 3 * 2 = ?", respuesta: 11 };
-    } else {
-        const seleccionado = diagnosticos[Math.floor(Math.random() * diagnosticos.length)];
-        diagnosticoActual = { texto: seleccionado.texto, respuesta: seleccionado.respuesta };
-    }
-    $('diagTemaEnunciado').innerHTML = `<p>${diagnosticoActual.texto}</p>`;
-    const input = $('diagTemaInput');
+    mostrarPantalla('ejercicioScreen');
+    $('topbarTemaTitulo').textContent = `${temaActual.emoji} ${temaActual.nombre}`;
+
+    // Diagnóstico rápido del tema
+    const diagnosticos = temaActual.diagnosticos || temaActual.fallbacks || [];
+    const seleccionado = diagnosticos[Math.floor(Math.random() * diagnosticos.length)];
+
+    ejercicioActual = { 
+        texto: seleccionado.texto, 
+        respuesta: seleccionado.respuesta,
+        esDiagnostico: true
+    };
+
+    $('enunciadoEjercicio').innerHTML = `<p><strong>Diagnóstico inicial:</strong><br>${ejercicioActual.texto}</p>`;
+    
+    const input = $('respuestaEjercicio');
     input.value = '';
     input.disabled = false;
-    $('diagTemaComprobar').disabled = false;
-    $('diagTemaRetro').innerHTML = '';
-    let tiempo = 60;
-    const timerEl = $('diagTemaTimer');
-    if (diagTimer) clearInterval(diagTimer);
-    diagTimer = setInterval(() => {
-        tiempo--;
-        if (timerEl) timerEl.textContent = tiempo;
-        if (tiempo <= 0) {
-            clearInterval(diagTimer);
-            finalizarDiagnosticoTema(false);
-        }
-    }, 1000);
-}
+    $('comprobarEjercicio').disabled = false;
+    $('retroalimentacion').innerHTML = '';
 
-function finalizarDiagnosticoTema(exito) {
-    if (diagTimer) clearInterval(diagTimer);
-    const input = $('diagTemaInput');
-    const retro = $('diagTemaRetro');
-    if (input) input.disabled = true;
-    const btn = $('diagTemaComprobar');
-    if (btn) btn.disabled = true;
-    if (exito) {
-        nivelUsuario = 5.0;
-        if (retro) retro.innerHTML = `<div class="retro-correcto"><strong>¡Bien hecho!</strong><br>Estás en un buen nivel para este tema.</div>`;
-    } else {
-        const userVal = parseFloat(input.value.replace(',', '.'));
-        const correcta = diagnosticoActual.respuesta;
-        const diferencia = Math.abs(userVal - correcta);
-        if (diferencia <= 3) {
-            nivelUsuario = 2.5;
-            if (retro) retro.innerHTML = `<div class="retro-incorrecto"><strong>Casi...</strong><br>Empezaremos en nivel medio-bajo.</div>`;
-        } else {
-            nivelUsuario = 0.5;
-            if (retro) retro.innerHTML = `<div class="retro-incorrecto"><strong>Empecemos desde lo básico.</strong><br>Vamos a reforzar los fundamentos.</div>`;
-        }
-    }
-    actualizarScoreUI();
-    setTimeout(() => {
-        mostrarPantalla('ejercicioScreen');
-        const titulo = $('topbarTemaTitulo');
-        if (titulo) titulo.textContent = `${temaActual.emoji} ${temaActual.nombre}`;
-        cargarEjercicio();
-    }, 2000);
+    initPizarra(); // Inicializar pizarra
 }
 
 async function cargarEjercicio() {
     if (!temaActual) return;
+
     const enunciadoEl = $('enunciadoEjercicio');
-    const inputEl = $('respuestaEjercicio');
-    const retroEl = $('retroalimentacion');
-    const btnEl = $('comprobarEjercicio');
-    if (enunciadoEl) enunciadoEl.innerHTML = `<div class="cargando-msg">🧭 Generando reto nivel ${nivelUsuario.toFixed(1)}...</div>`;
-    if (inputEl) {
-        inputEl.value = '';
-        inputEl.disabled = false;
-    }
-    if (retroEl) retroEl.innerHTML = '';
-    if (btnEl) btnEl.disabled = false;
+    enunciadoEl.innerHTML = `<div class="cargando-msg">🧭 Generando nuevo reto nivel ${nivelUsuario.toFixed(1)}...</div>`;
+
+    $('respuestaEjercicio').value = '';
+    $('retroalimentacion').innerHTML = '';
+
     try {
         const prompt = `Eres un generador de ejercicios para Didasky.
 Materia: ${MATERIAS[materiaActual].nombre}
-Tema: ${temaActual.nombre} — ${temaActual.desc}
+Tema: ${temaActual.nombre}
 Nivel: ${nivelUsuario.toFixed(1)} / 10
-Genera UN ejercicio numérico ORIGINAL, largo y contextualizado.
+
+Genera UN ejercicio numérico ORIGINAL, interesante y bien contextualizado.
 Responde ÚNICAMENTE en este formato:
-Enunciado: [problema completo con bastante texto]
+
+Enunciado: [problema completo]
 Respuesta: [solo el número]`;
+
         const res = await callOpenRouter(prompt);
         const matchE = res.match(/Enunciado:\s*([\s\S]+?)(?=Respuesta:)/i);
         const matchR = res.match(/Respuesta:\s*([\d.,\-]+)/i);
+
         if (matchE && matchR) {
             const respNum = parseFloat(matchR[1].replace(',', '.'));
             if (!isNaN(respNum)) {
-                ejercicioActual = { texto: matchE[1].trim(), respuesta: respNum };
-                if (enunciadoEl) enunciadoEl.innerHTML = `<p>${ejercicioActual.texto}</p>`;
+                ejercicioActual = { 
+                    texto: matchE[1].trim(), 
+                    respuesta: respNum 
+                };
+                enunciadoEl.innerHTML = `<p>${ejercicioActual.texto}</p>`;
                 return;
             }
         }
     } catch (e) {
         console.warn('IA falló, usando fallback');
     }
+
+    // Fallback
     const fallbacks = temaActual.fallbacks || [];
-    let candidatos = fallbacks.filter(f => Math.abs(f.nivel - Math.round(nivelUsuario)) <= 2);
-    if (candidatos.length === 0) candidatos = fallbacks;
-    const seleccionado = candidatos[Math.floor(Math.random() * candidatos.length)];
+    const seleccionado = fallbacks[Math.floor(Math.random() * fallbacks.length)];
     ejercicioActual = { texto: seleccionado.texto, respuesta: seleccionado.respuesta };
-    if (enunciadoEl) enunciadoEl.innerHTML = `<p>${ejercicioActual.texto}</p>`;
+    enunciadoEl.innerHTML = `<p>${ejercicioActual.texto}</p>`;
 }
 
-function registrarError(tipo) {
-    const key = `${materiaActual}_${temaActual?.id}`;
-    if (!errorAnalytics[key]) errorAnalytics[key] = { count: 0, tipos: {} };
-    errorAnalytics[key].count++;
-    errorAnalytics[key].tipos[tipo] = (errorAnalytics[key].tipos[tipo] || 0) + 1;
-    localStorage.setItem('didasky_errors', JSON.stringify(errorAnalytics));
+async function analizarError() {
+    const chatBox = $('daskyChatBox');
+    chatBox.classList.remove('oculta');
+    $('daskyToggle').classList.add('oculta');
+
+    const mensajes = $('daskyMessages');
+    
+    const userMsg = document.createElement('div');
+    userMsg.className = 'msg-user';
+    userMsg.textContent = `Analizar error: ${document.getElementById('respuestaEjercicio').value}`;
+    mensajes.appendChild(userMsg);
+
+    const loading = document.createElement('div');
+    loading.className = 'msg-cargando';
+    loading.textContent = 'Dasky analizando tu error...';
+    mensajes.appendChild(loading);
+    mensajes.scrollTop = mensajes.scrollHeight;
+
+    const prompt = `Ejercicio: ${ejercicioActual.texto}
+Respuesta del estudiante: ${document.getElementById('respuestaEjercicio').value}
+Respuesta correcta: ${ejercicioActual.respuesta}
+
+Clasifica el error (Conceptual / Cálculo / Fórmula / Lógica) y explícalo paso a paso de forma clara y educativa. 
+Al final genera un ejercicio de recuperación más fácil similar.`;
+
+    try {
+        const respuesta = await callOpenRouter(prompt);
+        loading.remove();
+        const daskyMsg = document.createElement('div');
+        daskyMsg.className = 'msg-dasky';
+        daskyMsg.innerHTML = `<strong>Dasky:</strong><br>${respuesta}`;
+        mensajes.appendChild(daskyMsg);
+    } catch (e) {
+        loading.textContent = '❌ Error de conexión. Inténtalo de nuevo.';
+    }
+    mensajes.scrollTop = mensajes.scrollHeight;
 }
 
 async function comprobarRespuesta() {
     const inputEl = $('respuestaEjercicio');
     const retroEl = $('retroalimentacion');
-    const btnEl = $('comprobarEjercicio');
     const userVal = parseFloat(inputEl.value.replace(',', '.'));
+
     if (isNaN(userVal)) {
-        if (retroEl) retroEl.innerHTML = `<div class="retro-warning">⚠️ Ingresa un número válido.</div>`;
+        retroEl.innerHTML = `<div class="retro-warning">⚠️ Ingresa un número válido.</div>`;
         return;
     }
-    if (!ejercicioActual) return;
+
     const correcta = ejercicioActual.respuesta;
-    const margen = Math.max(Math.abs(correcta * 0.10), 0.01);
+    const margen = Math.max(Math.abs(correcta * 0.12), 0.01);
     const esCorrecto = Math.abs(userVal - correcta) <= margen;
+
     if (esCorrecto) {
-        erroresCorregidos++;
         nivelUsuario = Math.min(10, nivelUsuario + 0.5);
-        if (retroEl) retroEl.innerHTML = `<div class="retro-correcto"><strong>🎉 ¡Correcto!</strong><br>Muy bien navegante.</div>`;
-        if (inputEl) inputEl.disabled = true;
-        if (btnEl) btnEl.disabled = true;
+        retroEl.innerHTML = `<div class="retro-correcto"><strong>🎉 ¡Correcto!</strong><br>Excelente trabajo, navegante.</div>`;
+        inputEl.disabled = true;
+        $('comprobarEjercicio').disabled = true;
+        actualizarScoreUI();
         setTimeout(cargarEjercicio, 2200);
     } else {
-        nivelUsuario = Math.max(1, nivelUsuario - 0.3);
-        const diferencia = Math.abs(userVal - correcta);
-        let tipoError = 'desconocido';
-        if (diferencia > correcta * 2) tipoError = 'magnitud';
-        else if (Math.abs(diferencia / correcta) > 0.5) tipoError = 'calculo';
-        else tipoError = 'aproximacion';
-        registrarError(tipoError);
-        if (retroEl) {
-            retroEl.innerHTML = `
-            <div class="retro-incorrecto">
-                <strong>❌ No es correcto</strong><br>
-                Tu respuesta: <strong>${userVal}</strong><br><br>
-                <button id="pedirPistaError" class="btn-pista" style="margin-top: 12px; width:100%;">
-                    🤖 Analizar mi error
-                </button>
-            </div>`;
-        }
+        nivelUsuario = Math.max(1, nivelUsuario - 0.35);
         actualizarScoreUI();
-        setTimeout(() => {
-            const btn = document.getElementById('pedirPistaError');
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    const chatBox = $('daskyChatBox');
-                    const fab = $('daskyToggle');
-                    if (chatBox) chatBox.classList.remove('oculta');
-                    if (fab) fab.classList.add('oculta');
-                    if (typeof window.enviarMensaje === 'function') {
-                        window.enviarMensaje(`Mi respuesta fue ${userVal} en este ejercicio:
-"${ejercicioActual.texto}"
 
-Explícame mi error paso a paso, clasifícalo en: (Conceptual / Cálculo / Fórmula / Lógica), y ayúdame a corregirlo. Luego genera un ejercicio de recuperación similar pero enfocado en el error que identifiques.`);
-                    }
-                });
-            }
+        retroEl.innerHTML = `
+        <div class="retro-incorrecto">
+            <strong>❌ Incorrecto</strong><br>
+            Tu respuesta: <strong>${userVal}</strong> | Correcta: <strong>${correcta}</strong><br><br>
+            <button id="analizarErrorBtn" class="btn-pista" style="width:100%; margin-top:10px;">
+                🤖 Analizar mi error con Dasky
+            </button>
+        </div>`;
+
+        setTimeout(() => {
+            const btn = $('analizarErrorBtn');
+            if (btn) btn.addEventListener('click', analizarError);
         }, 100);
     }
-    actualizarScoreUI();
 }
 
+// ==================== DASKY CHAT ====================
 function setupDasky() {
     const chatBox = $('daskyChatBox');
     const fab = $('daskyToggle');
@@ -499,138 +544,74 @@ function setupDasky() {
     const enviarBtn = $('daskyEnviar');
     const inputEl = $('daskyInput');
     const mensajesEl = $('daskyMessages');
+
     const toggle = () => {
-        const visible = !chatBox.classList.contains('oculta');
         chatBox.classList.toggle('oculta');
-        fab.classList.toggle('oculta', visible);
+        fab.classList.toggle('oculta');
     };
-    if (fab) fab.addEventListener('click', toggle);
-    if (closeBtn) closeBtn.addEventListener('click', toggle);
+
+    fab.addEventListener('click', toggle);
+    closeBtn.addEventListener('click', toggle);
+
     async function enviarMensaje(texto) {
-        window.enviarMensaje = enviarMensaje;
         if (!texto.trim()) return;
+
         const msgU = document.createElement('div');
         msgU.className = 'msg-user';
         msgU.textContent = texto;
-        if (mensajesEl) mensajesEl.appendChild(msgU);
+        mensajesEl.appendChild(msgU);
+
         const spinner = document.createElement('div');
         spinner.className = 'msg-cargando';
-        spinner.textContent = '🧭 Pensando...';
-        if (mensajesEl) mensajesEl.appendChild(spinner);
-        if (mensajesEl) mensajesEl.scrollTop = mensajesEl.scrollHeight;
-        const contexto = ejercicioActual
-            ? `Materia: ${MATERIAS[materiaActual].nombre}. Tema: ${temaActual?.nombre}. Ejercicio: "${ejercicioActual.texto}".`
-            : `Materia: ${MATERIAS[materiaActual].nombre}.`;
-        const prompt = `Eres Dasky. El estudiante pregunta: "${texto}". Contexto: ${contexto}. Da SOLO una pista corta, máximo 3 oraciones. NO des la respuesta directa.`;
+        spinner.textContent = '🧭 Dasky pensando...';
+        mensajesEl.appendChild(spinner);
+        mensajesEl.scrollTop = mensajesEl.scrollHeight;
+
         try {
-            const respuesta = await callOpenRouter(prompt);
+            const respuesta = await callOpenRouter(texto);
             spinner.remove();
             const msgD = document.createElement('div');
             msgD.className = 'msg-dasky';
             msgD.innerHTML = `<strong>Dasky:</strong><br>${respuesta}`;
-            if (mensajesEl) mensajesEl.appendChild(msgD);
-        } catch {
+            mensajesEl.appendChild(msgD);
+        } catch (e) {
             spinner.remove();
             const msgD = document.createElement('div');
             msgD.className = 'msg-dasky';
-            msgD.innerHTML = `<strong>Dasky:</strong><br>Revisa bien las variables y la fórmula base del tema.`;
-            if (mensajesEl) mensajesEl.appendChild(msgD);
+            msgD.textContent = "Lo siento, tuve un problema de conexión.";
+            mensajesEl.appendChild(msgD);
         }
-        if (mensajesEl) mensajesEl.scrollTop = mensajesEl.scrollHeight;
+        mensajesEl.scrollTop = mensajesEl.scrollHeight;
     }
-    if (enviarBtn) {
-        enviarBtn.addEventListener('click', () => {
-            const txt = inputEl.value.trim();
-            if (txt) { enviarMensaje(txt); inputEl.value = ''; }
-        });
-    }
-    if (inputEl) {
-        inputEl.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                const txt = inputEl.value.trim();
-                if (txt) { enviarMensaje(txt); inputEl.value = ''; }
-            }
-        });
-    }
-    const btnPista = $('ayudaDasky');
-    if (btnPista) {
-        btnPista.addEventListener('click', () => {
-            if (chatBox) chatBox.classList.remove('oculta');
-            if (fab) fab.classList.add('oculta');
-            const pistaTxt = temaActual ? `Dame una pista para ${temaActual.nombre}.` : 'Dame una pista.';
-            enviarMensaje(pistaTxt);
-        });
-    }
-}
 
-function realizarDiagnostico() {
-    mostrarPantalla('diagnosticoScreen');
-    const diagEl = $('diagProblema');
-    if (diagEl) diagEl.textContent = DIAGNOSTICO.titulo;
-    let tiempoRestante = DIAGNOSTICO.tiempo;
-    const timerBar = $('timerBar');
-    const timerText = $('timerText');
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        tiempoRestante--;
-        if (timerText) timerText.textContent = tiempoRestante;
-        if (timerBar) timerBar.style.width = `${(tiempoRestante / DIAGNOSTICO.tiempo) * 100}%`;
-        if (tiempoRestante <= 0) {
-            clearInterval(timerInterval);
-            finalizarDiagnostico(false);
+    enviarBtn.addEventListener('click', () => {
+        enviarMensaje(inputEl.value.trim());
+        inputEl.value = '';
+    });
+
+    inputEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            enviarMensaje(inputEl.value.trim());
+            inputEl.value = '';
         }
-    }, 1000);
+    });
+
+    $('ayudaDasky').addEventListener('click', () => {
+        chatBox.classList.remove('oculta');
+        fab.classList.add('oculta');
+        enviarMensaje(`Dame una pista para el tema actual: ${temaActual?.nombre}`);
+    });
 }
 
-function finalizarDiagnostico(resolvio) {
-    if (timerInterval) clearInterval(timerInterval);
-    const inputEl = $('diagRespuesta');
-    const resultadoEl = $('diagResultado');
-    const enviarBtn = $('diagEnviar');
-    if (inputEl) inputEl.disabled = true;
-    if (enviarBtn) enviarBtn.disabled = true;
-    let mensaje = '';
-    if (resolvio) {
-        const userVal = parseFloat(inputEl.value.replace(',', '.'));
-        const margen = 3;
-        if (Math.abs(userVal - DIAGNOSTICO.respuesta) <= margen) {
-            nivelUsuario = 6;
-            mensaje = '✅ ¡Muy bien! Comenzaremos con nivel intermedio.';
-        } else {
-            nivelUsuario = 4;
-            mensaje = '⚠️ Respuesta cercana. Comenzaremos con nivel adaptado.';
-        }
-    } else {
-        nivelUsuario = 3;
-        mensaje = '⏱️ Tiempo agotado. Comenzaremos con nivel más básico.';
-    }
-    if (resultadoEl) {
-        resultadoEl.innerHTML = `<p>${mensaje}</p>`;
-        resultadoEl.classList.remove('oculta');
-    }
-    diagnosticoRealizado = true;
-    localStorage.setItem('didasky_diag', 'true');
-    localStorage.setItem('didasky_nivel', nivelUsuario);
-    setTimeout(() => {
-        mostrarPantalla('mapaScreen');
-        actualizarTopbarMateria();
-        construirMapa();
-        const fab = $('daskyToggle');
-        if (fab) fab.classList.remove('oculta');
-    }, 2000);
-}
-
-function actualizarTopbarMateria() {
-    const materia = MATERIAS[materiaActual];
-    const badge = $('topbarMateriaBadge');
-    if (badge) badge.textContent = `${materia.icono} ${materia.nombre}`;
-}
-
+// ==================== INICIO ====================
 document.addEventListener('DOMContentLoaded', () => {
+    // Cargar nivel guardado
     const savedNivel = parseFloat(localStorage.getItem('didasky_nivel'));
     if (!isNaN(savedNivel)) nivelUsuario = savedNivel;
+
     actualizarScoreUI();
 
+    // Selección de materia
     document.querySelectorAll('.materia-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.materia-btn').forEach(b => b.classList.remove('activa-materia'));
@@ -639,121 +620,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const btnEmpezar = $('btnEmpezar');
-    if (btnEmpezar) {
-        btnEmpezar.addEventListener('click', () => {
-            if (!diagnosticoRealizado) {
-                realizarDiagnostico();
-            } else {
-                mostrarPantalla('mapaScreen');
-                actualizarTopbarMateria();
-                construirMapa();
-                const fab = $('daskyToggle');
-                if (fab) fab.classList.remove('oculta');
-            }
-        });
+    // Botón empezar
+    $('btnEmpezar').addEventListener('click', () => {
+        mostrarPantalla('mapaScreen');
+        actualizarTopbarMateria();
+        construirMapa();
+        $('daskyToggle').classList.remove('oculta');
+    });
+
+    function actualizarTopbarMateria() {
+        const materia = MATERIAS[materiaActual];
+        if ($('topbarMateriaBadge')) {
+            $('topbarMateriaBadge').textContent = `${materia.icono} ${materia.nombre}`;
+        }
     }
 
-    const diagEnviar = $('diagEnviar');
-    if (diagEnviar) {
-        diagEnviar.addEventListener('click', () => {
-            const inputEl = $('diagRespuesta');
-            if (inputEl && inputEl.value.trim()) {
-                finalizarDiagnostico(true);
-            }
-        });
-    }
+    // Eventos
+    $('popupEntrar').addEventListener('click', iniciarDiagnosticoTema);
+    $('popupCerrar').addEventListener('click', cerrarPopup);
+    $('popupOverlay').addEventListener('click', cerrarPopup);
 
-    const diagInputGlobal = $('diagRespuesta');
-    if (diagInputGlobal) {
-        diagInputGlobal.addEventListener('keydown', e => {
-            if (e.key === 'Enter' && !$('diagEnviar').disabled) {
-                finalizarDiagnostico(true);
-            }
-        });
-    }
+    $('btnVolverMapa').addEventListener('click', () => mostrarPantalla('mapaScreen'));
+    $('comprobarEjercicio').addEventListener('click', comprobarRespuesta);
+    $('saltarEjercicio').addEventListener('click', () => {
+        nivelUsuario = Math.max(1, nivelUsuario - 0.2);
+        actualizarScoreUI();
+        cargarEjercicio();
+    });
 
-    const btnCambiar = $('btnCambiarMateria');
-    if (btnCambiar) {
-        btnCambiar.addEventListener('click', () => {
-            mostrarPantalla('inicioScreen');
-            const fab = $('daskyToggle');
-            if (fab) fab.classList.add('oculta');
-            const chat = $('daskyChatBox');
-            if (chat) chat.classList.add('oculta');
-        });
-    }
+    $('btnCambiarMateria').addEventListener('click', () => {
+        mostrarPantalla('inicioScreen');
+        $('daskyToggle').classList.add('oculta');
+        $('daskyChatBox').classList.add('oculta');
+    });
 
-    const popupEntrar = $('popupEntrar');
-    if (popupEntrar) {
-        popupEntrar.addEventListener('click', () => {
-            if (!temaActual) return;
-            iniciarDiagnosticoTema();
-        });
-    }
-
-    const popupCerrar = $('popupCerrar');
-    const popupOverlay = $('popupOverlay');
-    if (popupCerrar) popupCerrar.addEventListener('click', cerrarPopup);
-    if (popupOverlay) popupOverlay.addEventListener('click', cerrarPopup);
-
-    const btnVolver = $('btnVolverMapa');
-    if (btnVolver) {
-        btnVolver.addEventListener('click', () => {
-            mostrarPantalla('mapaScreen');
-        });
-    }
-
-    const btnComprobar = $('comprobarEjercicio');
-    if (btnComprobar) {
-        btnComprobar.addEventListener('click', comprobarRespuesta);
-    }
-
-    const inputResp = $('respuestaEjercicio');
-    if (inputResp) {
-        inputResp.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                comprobarRespuesta();
-            }
-        });
-    }
-
-    const btnSaltar = $('saltarEjercicio');
-    if (btnSaltar) {
-        btnSaltar.addEventListener('click', () => {
-            nivelUsuario = Math.max(1, nivelUsuario - 0.2);
-            actualizarScoreUI();
-            cargarEjercicio();
-        });
-    }
-
-    const diagTemaComprobar = $('diagTemaComprobar');
-    if (diagTemaComprobar) {
-        diagTemaComprobar.addEventListener('click', () => {
-            const input = $('diagTemaInput');
-            const userVal = parseFloat(input.value.replace(',', '.'));
-            if (isNaN(userVal)) {
-                const retro = $('diagTemaRetro');
-                if (retro) retro.innerHTML = `<div class="retro-warning">⚠️ Ingresa un número válido.</div>`;
-                return;
-            }
-            const correcta = diagnosticoActual.respuesta;
-            const margen = 4;
-            const esCorrecto = Math.abs(userVal - correcta) <= margen;
-            finalizarDiagnosticoTema(esCorrecto);
-        });
-    }
-
-    const diagInputTema = $('diagTemaInput');
-    if (diagInputTema) {
-        diagInputTema.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                const btn = $('diagTemaComprobar');
-                if (btn) btn.click();
-            }
-        });
-    }
+    // Tecla Enter en input
+    $('respuestaEjercicio').addEventListener('keydown', e => {
+        if (e.key === 'Enter') comprobarRespuesta();
+    });
 
     setupDasky();
 });
