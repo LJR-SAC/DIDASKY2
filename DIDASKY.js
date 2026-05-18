@@ -429,7 +429,7 @@ async function cargarEjercicio() {
     $('retroalimentacion').innerHTML = '';
 
     try {
-        const prompt = `Eres un excelente profesor, hablas español y das las respuestas en texto plano, sin formato como negrita o cursiva . Genera un ejercicio moderadamente largo y bien explicado de ${temaActual.nombre} nivel ${nivelUsuario.toFixed(1)}, .
+        const prompt = `Eres un excelente profesor, hablas español y das las respuestas en texto plano, sin formato como negrita o cursiva . Genera un ejercicio no tan largo y bien explicado de ${temaActual.nombre} nivel ${nivelUsuario.toFixed(1)}, .
 Responde exactamente así:
 Enunciado: [texto largo y detallado]
 Respuesta: [número]`;
