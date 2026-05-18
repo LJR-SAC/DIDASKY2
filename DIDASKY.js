@@ -306,7 +306,13 @@ function mostrarPantalla(id) {
         pantalla.classList.add('activa');
     }
 }
-
+function actualizarProgresoBarra() {
+    const barra = $('progresoBarra');
+    if (barra) {
+        const porcentaje = (nivelUsuario / 10) * 100;
+        barra.style.width = `${porcentaje}%`;
+    }
+}
 // ==================== Resto de funciones (sin cambios) ====================
 function actualizarScoreUI() {
     document.querySelectorAll('#scoreTop, #scoreEjercicio').forEach(el => {
@@ -314,6 +320,7 @@ function actualizarScoreUI() {
     });
     if ($('nivelActual')) $('nivelActual').textContent = nivelUsuario.toFixed(1);
     if ($('nivelBadgeMapa')) $('nivelBadgeMapa').textContent = nivelUsuario.toFixed(1);
+    actualizarProgresoBarra()
 }
 
 function construirMapa() { /* tu código original */ 
