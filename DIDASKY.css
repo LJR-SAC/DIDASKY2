@@ -1071,3 +1071,19 @@ body {
     .acciones-row { flex-direction: column; }
     .pizarra-header { flex-direction: column; align-items: flex-start; gap: .8rem; }
 }
+.timer-pill {
+    font-family: var(--font-pirata);
+    background: rgba(0,0,0,.5);
+    padding: .3rem 1rem;
+    border-radius: 40px;
+    color: var(--oro-bright);
+    white-space: nowrap;
+}
+.diag-desc {
+    font-family: var(--font-fell);
+    font-size: 1rem;
+    color: var(--tinta-soft);
+    margin-bottom: 1rem;
+    text-align: center;
+    font-style: italic;
+}
