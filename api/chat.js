@@ -31,7 +31,7 @@ export default async function handler(req, res) {
                 'X-Title': 'Didasky'
             },
             body: JSON.stringify({
-                model: "deepseek/deepseek-v4-flash:free",
+                model: "deepseek/deepseek-v4-flash",
                 messages: [
                     {
                         role: 'system',
