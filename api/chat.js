@@ -31,7 +31,7 @@ export default async function handler(req, res) {
                 'X-Title': 'Didasky'
             },
             body: JSON.stringify({
-                model: "deepseek/deepseek-v4-flash",
+                model: "nvidia/nemotron-3-super-120b-a12b:free",
                 messages: [
                     {
                         role: 'system',
