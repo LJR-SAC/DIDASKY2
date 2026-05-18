@@ -372,25 +372,27 @@ function iniciarDiagnosticoTema() {
 }
 async function cargarEjercicio() {
     if (!temaActual) return;
+    
     const enunciadoEl = $('enunciadoEjercicio');
-    enunciadoEl.innerHTML = `<div class="cargando-msg">🧭 Generando nuevo reto nivel ${nivelUsuario.toFixed(1)}...</div>`;
+    enunciadoEl.innerHTML = `<div class="cargando-msg">🧭 Generando ejercicio nivel ${nivelUsuario.toFixed(1)}...</div>`;
 
     $('respuestaEjercicio').value = '';
     $('retroalimentacion').innerHTML = '';
 
     try {
-        const prompt = `Eres un generador de ejercicios para Didasky.
-Materia: ${MATERIAS[materiaActual].nombre}
-Tema: ${temaActual.nombre}
-Nivel: ${nivelUsuario.toFixed(1)} / 10
+        const prompt = `Eres un excelente profesor de ${MATERIAS[materiaActual].nombre}.
+Tema: ${temaActual.nombre} - ${temaActual.desc}
+Nivel del estudiante: ${nivelUsuario.toFixed(1)} / 10
 
-Genera UN ejercicio numérico ORIGINAL, interesante y bien contextualizado.
-Responde ÚNICAMENTE en este formato:
+Genera UN ejercicio **bien redactado, largo y contextualizado** (como un problema real de libro de texto).
+Debe tener una buena historia o contexto, no solo números sueltos.
+Responde **exactamente** en este formato:
 
-Enunciado: [problema completo]
+Enunciado: [problema completo y detallado de al menos 2-4 oraciones]
 Respuesta: [solo el número]`;
 
         const res = await callOpenRouter(prompt);
+        
         const matchE = res.match(/Enunciado:\s*([\s\S]+?)(?=Respuesta:)/i);
         const matchR = res.match(/Respuesta:\s*([\d.,\-]+)/i);
 
@@ -403,15 +405,15 @@ Respuesta: [solo el número]`;
             }
         }
     } catch (e) {
-        console.warn('IA falló, usando fallback');
+        console.warn('IA falló → usando fallback');
     }
 
+    // Fallback
     const fallbacks = temaActual.fallbacks || [];
     const seleccionado = fallbacks[Math.floor(Math.random() * fallbacks.length)];
     ejercicioActual = { texto: seleccionado.texto, respuesta: seleccionado.respuesta };
     enunciadoEl.innerHTML = `<p>${ejercicioActual.texto}</p>`;
 }
-
 async function analizarError() {
     const chatBox = $('daskyChatBox');
     chatBox.classList.remove('oculta');
