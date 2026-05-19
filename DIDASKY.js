@@ -499,63 +499,119 @@ async function comprobarRespuesta() {
 }
 
 async function analizarError() {
+
     const chatBox = $('daskyChatBox');
     if (chatBox) chatBox.classList.remove('oculta');
+
     const fab = $('daskyToggle');
     if (fab) fab.classList.add('oculta');
 
     const mensajes = $('daskyMessages');
     if (!mensajes) return;
 
+    // ================= USER MSG =================
     const userMsg = document.createElement('div');
     userMsg.className = 'msg-user';
-    userMsg.textContent = `Mi respuesta fue ${document.getElementById('respuestaEjercicio').value}`;
+    userMsg.textContent =
+        `Mi respuesta fue ${$('respuestaEjercicio').value}`;
+
     mensajes.appendChild(userMsg);
 
+    // ================= LOADING =================
     const loading = document.createElement('div');
     loading.className = 'msg-cargando';
     loading.textContent = '🤖 Dasky analizando tu error...';
+
     mensajes.appendChild(loading);
+
     mensajes.scrollTop = mensajes.scrollHeight;
 
-        const prompt = `
-        Eres un tutor breve de física.
-        
-        Ejercicio:
-        ${ejercicioActual.texto}
-        
-        Respuesta del estudiante:
-        ${document.getElementById('respuestaEjercicio').value}
-        
-        Respuesta correcta:
-        ${ejercicioActual.respuesta}
-        
-        Explica el error en máximo 120 palabras.
-        Usa markdown.
-        Usa pasos cortos.
-        `;
+    // ================= PROMPT =================
+    const prompt = `
+Eres un tutor breve de física.
+
+Ejercicio:
+${ejercicioActual.texto}
+
+Respuesta del estudiante:
+${$('respuestaEjercicio').value}
+
+Respuesta correcta:
+${ejercicioActual.respuesta}
+
+Explica el error en máximo 120 palabras.
+
+Usa markdown.
+Usa pasos cortos.
+`;
+
     try {
-        const respuesta = await callOpenRouter(prompt);
-        loading.remove();
+
+        // ================= API =================
+        let respuesta = await callOpenRouter(prompt);
+
+        console.log("RESPUESTA IA:", respuesta);
+
+        // Evita respuestas gigantes
+        respuesta = respuesta.slice(0, 2500);
+
+        // ================= REMOVE LOADING =================
+        if (loading.parentNode) {
+            loading.remove();
+        }
+
+        // ================= DASKY MSG =================
         const daskyMsg = document.createElement('div');
         daskyMsg.className = 'msg-dasky';
+
+        // Parse markdown
+        const contenidoHTML = marked.parse(respuesta);
+
         daskyMsg.innerHTML = `
-        <strong>Dasky:</strong><br>
-        ${marked.parse(respuesta)}
-        `;
-        
-        renderMathInElement(daskyMsg, {
-            delimiters: [
-                { left: "$$", right: "$$", display: true },
-                { left: "\\[", right: "\\]", display: true },
-                { left: "$", right: "$", display: false },
-                { left: "\\(", right: "\\)", display: false }
-            ]
-        });
+<strong>Dasky:</strong><br>
+${contenidoHTML}
+`;
+
         mensajes.appendChild(daskyMsg);
+
+        // ================= RENDER MATH SOLO SI EXISTE =================
+        if (
+            respuesta.includes("\\(") ||
+            respuesta.includes("\\[") ||
+            respuesta.includes("$$")
+        ) {
+
+            renderMathInElement(daskyMsg, {
+                delimiters: [
+                    { left: "$$", right: "$$", display: true },
+                    { left: "\\[", right: "\\]", display: true },
+                    { left: "$", right: "$", display: false },
+                    { left: "\\(", right: "\\)", display: false }
+                ]
+            });
+
+        }
+
     } catch (e) {
-        loading.textContent = '❌ Error de conexión.';
+
+        console.error(e);
+
+        if (loading.parentNode) {
+            loading.remove();
+        }
+
+        const errorMsg = document.createElement('div');
+
+        errorMsg.className = 'msg-dasky';
+
+        errorMsg.innerHTML = `
+<strong>Dasky:</strong><br>
+❌ Error de conexión o timeout.
+`;
+
+        mensajes.appendChild(errorMsg);
     }
+
     mensajes.scrollTop = mensajes.scrollHeight;
 }
 
