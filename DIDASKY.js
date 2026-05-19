@@ -529,7 +529,19 @@ Clasifica el error y explícalo paso a paso.`;
         loading.remove();
         const daskyMsg = document.createElement('div');
         daskyMsg.className = 'msg-dasky';
-        daskyMsg.innerHTML = `<strong>Dasky:</strong><br>${respuesta}`;
+        daskyMsg.innerHTML = `
+        <strong>Dasky:</strong><br>
+        ${marked.parse(respuesta)}
+        `;
+        
+        renderMathInElement(daskyMsg, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "\\[", right: "\\]", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false }
+            ]
+        });
         mensajes.appendChild(daskyMsg);
     } catch (e) {
         loading.textContent = '❌ Error de conexión.';
