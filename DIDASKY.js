@@ -373,7 +373,7 @@ function iniciarDiagnosticoTema() {
     const input = $('diagTemaInput');
     input.value = '';
     input.disabled = false;
-    
+    $('diagTemaComprobar').disabled = false;
 
 
     $('diagTemaRetro').innerHTML = '';
