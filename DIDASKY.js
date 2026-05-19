@@ -478,7 +478,16 @@ async function comprobarRespuesta() {
             inputEl.disabled = true;
             $('comprobarEjercicio').disabled = true;
             actualizarScoreUI();
-            setTimeout(cargarEjercicio, 2200);
+            setTimeout(() => {
+            
+                const chatAbierto =
+                    !$('daskyChatBox').classList.contains('oculta');
+            
+                if (!chatAbierto) {
+                    cargarEjercicio();
+                }
+            
+            }, 2200);
         } else {
             nivelUsuario = Math.max(1, nivelUsuario - 0.35);
             actualizarScoreUI();
