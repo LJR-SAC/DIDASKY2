@@ -427,7 +427,8 @@ async function cargarEjercicio() {
 
     $('respuestaEjercicio').value = '';
     $('retroalimentacion').innerHTML = '';
-
+    $('respuestaEjercicio').disabled = false;
+    $('comprobarEjercicio').disabled = false;
     try {
         const prompt = `Eres un excelente profesor, hablas español y das las respuestas en texto plano, sin formato como negrita o cursiva . Genera un ejercicio no tan largo con 1 sola respuesta y 1 sola interrogante, bien explicado de ${temaActual.nombre} nivel ${nivelUsuario.toFixed(1)}, .
 Responde exactamente así:
