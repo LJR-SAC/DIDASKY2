@@ -583,23 +583,7 @@ ${contenidoHTML}
 
         mensajes.appendChild(daskyMsg);
 
-        // ================= RENDER MATH SOLO SI EXISTE =================
-        if (
-            respuesta.includes("\\(") ||
-            respuesta.includes("\\[") ||
-            respuesta.includes("$$")
-        ) {
 
-            renderMathInElement(daskyMsg, {
-                delimiters: [
-                    { left: "$$", right: "$$", display: true },
-                    { left: "\\[", right: "\\]", display: true },
-                    { left: "$", right: "$", display: false },
-                    { left: "\\(", right: "\\)", display: false }
-                ]
-            });
-
-        }
 
     } catch (e) {
 
