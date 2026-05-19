@@ -518,12 +518,22 @@ async function analizarError() {
     mensajes.appendChild(loading);
     mensajes.scrollTop = mensajes.scrollHeight;
 
-    const prompt = `Ejercicio: ${ejercicioActual.texto}
-Respuesta del estudiante: ${document.getElementById('respuestaEjercicio').value}
-Respuesta correcta: ${ejercicioActual.respuesta}
-
-Clasifica el error y explícalo paso a paso.`;
-
+        const prompt = `
+        Eres un tutor breve de física.
+        
+        Ejercicio:
+        ${ejercicioActual.texto}
+        
+        Respuesta del estudiante:
+        ${document.getElementById('respuestaEjercicio').value}
+        
+        Respuesta correcta:
+        ${ejercicioActual.respuesta}
+        
+        Explica el error en máximo 120 palabras.
+        Usa markdown.
+        Usa pasos cortos.
+        `;
     try {
         const respuesta = await callOpenRouter(prompt);
         loading.remove();
